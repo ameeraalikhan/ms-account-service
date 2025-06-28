@@ -1,0 +1,52 @@
+name: CI/CD - Deploy Account Service to EKS
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-south-1
+  CLUSTER_NAME: ameera-cluster4
+  ECR_REGISTRY: 071493677521.dkr.ecr.ap-south-1.amazonaws.com
+  ECR_REPOSITORY: account-service
+
+jobs:
+  build-and-deploy:
+    name: Build, Push to ECR & Deploy to EKS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v3
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔑 Login to Amazon ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | \
+          docker login --username AWS --password-stdin $ECR_REGISTRY
+
+      - name: 🛠️ Build Docker image
+        run: |
+          docker build -t $ECR_REPOSITORY .
+          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: 📦 Push Docker image to ECR
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: ⚙️ Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+      - name: 🚀 Deploy to EKS and Scale Up
+        run: |
+          kubectl apply -f account-service-full.yaml
+          kubectl scale deployment account-service --replicas=1
