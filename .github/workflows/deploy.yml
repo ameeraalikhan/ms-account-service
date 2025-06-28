@@ -18,8 +18,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Checkout Code
         uses: actions/checkout@v3
+
+      - name: 🧪 Build Spring Boot App
+        run: mvn clean package --file pom.xml
 
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -33,12 +36,12 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      - name: 🛠️ Build Docker image
+      - name: 🐳 Build Docker Image
         run: |
           docker build -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-      - name: 📦 Push Docker image to ECR
+      - name: 📦 Push Docker Image to ECR
         run: |
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
