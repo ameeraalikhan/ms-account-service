@@ -33,12 +33,19 @@ jobs:
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_FULL
 
-      - name: 🔐 Login to OpenShift internal registry
+      - name: 🛠️ Install OpenShift CLI
         run: |
-          echo ${{ secrets.OPENSHIFT_TOKEN }} | oc login \
-            --token=$(cat -) \
-            --server=${{ secrets.OPENSHIFT_URL }} \
-            --insecure-skip-tls-verify=true
+          curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz -o oc.tar.gz
+          tar -xvf oc.tar.gz
+          sudo mv oc /usr/local/bin/
+          oc version --client
+
+      - name: 🔐 Login to OpenShift
+        run: |
+          echo "${{ secrets.OPENSHIFT_TOKEN }}" | \
+          oc login --token=$(cat -) --server=${{ secrets.OPENSHIFT_URL }} --insecure-skip-tls-verify=true
+
+          oc whoami
 
           oc whoami -t | docker login -u openshift --password-stdin \
             image-registry.openshift-image-registry.svc:5000
@@ -46,7 +53,7 @@ jobs:
       - name: 📤 Push to OpenShift Registry
         run: docker push $IMAGE_FULL
 
-      - name: 🔧 Replace image placeholder
+      - name: 🔧 Replace image in manifest
         run: |
           sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_FULL|" account-service.yaml
 
