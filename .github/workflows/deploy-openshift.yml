@@ -8,13 +8,14 @@ on:
 
 env:
   IMAGE_NAME: account-service
-  IMAGE_TAG: ${{ github.sha }}
   DOCKERHUB_REPO: ameeradockerhub/k8s/account-service
-  IMAGE_FULL: docker.io/${{ env.DOCKERHUB_REPO }}:${{ github.sha }}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_TAG: ${{ github.sha }}
+      IMAGE_FULL: docker.io/${{ env.DOCKERHUB_REPO }}:${{ github.sha }}
 
     steps:
       - name: 📥 Checkout Code
