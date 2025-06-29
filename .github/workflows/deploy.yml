@@ -48,7 +48,7 @@ jobs:
 
       - name: 🐳 Build Docker Image
         run: |
-          docker build -t $ECR_REPOSITORY .
+          docker build --no-cache -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
       - name: 📦 Push Docker Image to ECR
