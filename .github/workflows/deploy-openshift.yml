@@ -8,7 +8,7 @@ on:
 
 env:
   IMAGE_NAME: account-service
-  DOCKERHUB_REPO: ameeradockerhub/k8s/account-service
+  DOCKERHUB_REPO: ameeradockerhub/account-service
 
 jobs:
   deploy:
