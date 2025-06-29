@@ -55,6 +55,10 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
+      - name: 🔍 Verify EKS Access
+        run: |
+          kubectl get svc
+
       - name: 🚀 Deploy to EKS and Scale Up
         run: |
           kubectl apply -f account-service-full.yaml --validate=false
