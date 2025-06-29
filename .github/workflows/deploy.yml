@@ -37,6 +37,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: 🔎 Who am I? (Check STS Identity)
+        run: aws sts get-caller-identity
+
       - name: 🔑 Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
@@ -55,11 +58,10 @@ jobs:
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
-      - name: 🔍 Verify EKS Access
-        run: |
-          kubectl get svc
+      - name: 🔍 Test EKS Access (kubectl get nodes)
+        run: kubectl get nodes
 
       - name: 🚀 Deploy to EKS and Scale Up
         run: |
-          kubectl apply -f account-service-full.yaml --validate=false
+          kubectl apply -f account-service-full.yaml
           kubectl scale deployment account-service --replicas=1
