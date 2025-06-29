@@ -48,9 +48,9 @@ jobs:
           project_id: ${{ env.GCP_PROJECT_ID }}
           install_components: 'gke-gcloud-auth-plugin'
 
-      - name: 🐳 Tag and Push Docker Image to GCR
+      - name: 🐳 Tag and Push Docker Image to Artifact Registry
         run: |
-          gcloud auth configure-docker
+          gcloud auth configure-docker us-central1-docker.pkg.dev
           docker tag $IMAGE_NAME:${{ github.sha }} $GCR_IMAGE:${{ github.sha }}
           docker tag $IMAGE_NAME:${{ github.sha }} $GCR_IMAGE:latest
           docker push $GCR_IMAGE:${{ github.sha }}
