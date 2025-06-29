@@ -67,5 +67,5 @@ jobs:
 
       - name: 🚀 Deploy to GKE
         run: |
-          kubectl apply -f account-service-full.yaml
+          kubectl apply -f account-service.yaml
           kubectl rollout restart deployment account-service
