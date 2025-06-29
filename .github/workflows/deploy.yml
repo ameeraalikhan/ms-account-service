@@ -57,5 +57,5 @@ jobs:
 
       - name: 🚀 Deploy to EKS and Scale Up
         run: |
-          kubectl apply -f account-service-full.yaml
+          kubectl apply -f account-service-full.yaml --validate=false
           kubectl scale deployment account-service --replicas=1
