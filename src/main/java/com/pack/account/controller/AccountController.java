@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pack.account.entity.Account;
-//AccountController
+//AccountController//
 @RestController
 @RequestMapping("/accounts")
 public class AccountController {
@@ -18,7 +18,7 @@ public class AccountController {
     
     public AccountController() {
         // Initialize with dummy data
-        accounts.add(new Account("A1001", "C1001", "Savings", "BR1001"));
+        accounts.add(new Account("A10001", "C1001", "Savings", "BR1001"));
         accounts.add(new Account("A1002", "C1002", "Current", "BR1002"));
         accounts.add(new Account("A1003", "C1003", "Savings", "BR1001"));
     }
