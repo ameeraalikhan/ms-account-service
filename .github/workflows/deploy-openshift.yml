@@ -1,4 +1,4 @@
-name: CI/CD - Deploy to OpenShift
+name: CI/CD - Deploy to OpenShift via Docker Hub
 
 on:
   push:
@@ -9,7 +9,8 @@ on:
 env:
   IMAGE_NAME: account-service
   IMAGE_TAG: ${{ github.sha }}
-  IMAGE_FULL: image-registry.openshift-image-registry.svc:5000/${{ secrets.OPENSHIFT_NAMESPACE }}/account-service:${{ github.sha }}
+  DOCKERHUB_REPO: ameeradockerhub/k8s/account-service
+  IMAGE_FULL: docker.io/${{ env.DOCKERHUB_REPO }}:${{ github.sha }}
 
 jobs:
   deploy:
@@ -33,6 +34,15 @@ jobs:
           docker build -t $IMAGE_NAME:$IMAGE_TAG .
           docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_FULL
 
+      - name: 🔐 Docker login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 📤 Push to Docker Hub
+        run: docker push $IMAGE_FULL
+
       - name: 🛠️ Install OpenShift CLI
         run: |
           curl -L https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz -o oc.tar.gz
@@ -42,16 +52,7 @@ jobs:
 
       - name: 🔐 Login to OpenShift
         run: |
-          echo "${{ secrets.OPENSHIFT_TOKEN }}" | \
-          oc login --token=$(cat -) --server=${{ secrets.OPENSHIFT_URL }} --insecure-skip-tls-verify=true
-
-          oc whoami
-
-          oc whoami -t | docker login -u openshift --password-stdin \
-            image-registry.openshift-image-registry.svc:5000
-
-      - name: 📤 Push to OpenShift Registry
-        run: docker push $IMAGE_FULL
+          echo "${{ secrets.OPENSHIFT_TOKEN }}" | oc login --token=$(cat -) --server=${{ secrets.OPENSHIFT_URL }} --insecure-skip-tls-verify=true
 
       - name: 🔧 Replace image in manifest
         run: |
