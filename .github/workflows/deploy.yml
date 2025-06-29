@@ -1,4 +1,4 @@
-name: CI/CD - Deploy Account Service to GKE & EKS
+name: CI/CD - Deploy Account Service to EKS
 
 on:
   push:
@@ -7,14 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  # Common
   IMAGE_NAME: account-service
-
-  # GCP
-  GCP_PROJECT_ID: unique-ellipse-464414-j6
-  GCP_REGION: us-central1
-  GKE_CLUSTER: autopilot-cluster-1
-  GCR_IMAGE: gcr.io/unique-ellipse-464414-j6/account-service
 
   # AWS
   AWS_REGION: ap-south-1
@@ -23,11 +16,9 @@ env:
   ECR_REPOSITORY: account-service
 
 jobs:
-  build:
-    name: 🏗️ Build Docker Image
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.export-tag.outputs.image_tag }}
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v3
@@ -46,57 +37,6 @@ jobs:
           docker build --no-cache -t $IMAGE_NAME:${{ github.sha }} .
           docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:latest
 
-      - name: 📦 Save Image Tag
-        id: export-tag
-        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-
-      - name: 📤 Export Docker Image (for use in other jobs)
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-image
-          path: /tmp  # Dummy to satisfy upload-artifact; actual image is reused from cache
-
-  deploy-gke:
-    name: 🚀 Deploy to GKE
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 🔐 Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: ☁️ Set up gcloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
-          install_components: 'gke-gcloud-auth-plugin'
-
-      - name: 🐳 Tag and Push to GCR
-        run: |
-          gcloud auth configure-docker
-          docker tag $IMAGE_NAME:${{ needs.build.outputs.image_tag }} $GCR_IMAGE:${{ needs.build.outputs.image_tag }}
-          docker tag $IMAGE_NAME:${{ needs.build.outputs.image_tag }} $GCR_IMAGE:latest
-          docker push $GCR_IMAGE:${{ needs.build.outputs.image_tag }}
-          docker push $GCR_IMAGE:latest
-
-      - name: ⚙️ Get GKE Credentials
-        run: |
-          gcloud container clusters get-credentials $GKE_CLUSTER \
-            --region $GCP_REGION --project $GCP_PROJECT_ID
-
-      - name: 🚀 Deploy to GKE
-        run: |
-          kubectl apply -f account-service-full.yaml
-          kubectl rollout restart deployment account-service
-
-  deploy-eks:
-    name: 🚀 Deploy to EKS
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -109,12 +49,16 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      - name: 🐳 Tag and Push to ECR
+      - name: 🐳 Tag and Push Docker Image to ECR
         run: |
-          docker tag $IMAGE_NAME:${{ needs.build.outputs.image_tag }} $ECR_REGISTRY/$ECR_REPOSITORY:${{ needs.build.outputs.image_tag }}
-          docker tag $IMAGE_NAME:${{ needs.build.outputs.image_tag }} $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ needs.build.outputs.image_tag }}
+          docker tag $IMAGE_NAME:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker tag $IMAGE_NAME:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: 🔧 Replace image placeholder in manifest
+        run: |
+          sed -i "s|IMAGE_PLACEHOLDER|$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}|" account-service-full.yaml
 
       - name: ⚙️ Update kubeconfig for EKS
         run: |
