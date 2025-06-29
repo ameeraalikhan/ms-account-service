@@ -11,7 +11,7 @@ env:
   AWS_REGION: ap-south-1
   CLUSTER_NAME: ameera-cluster
   ECR_REGISTRY: 071493677521.dkr.ecr.ap-south-1.amazonaws.com
-  ECR_REPOSITORY: account-service
+  ECR_REPOSITORY: account-service-1
 
 jobs:
   build-and-deploy:
@@ -48,8 +48,6 @@ jobs:
 
       - name: 🐳 Build Docker Image
         run: |
-          docker stop $ECR_REPOSITORY
-          docker rm $ECR_REPOSITORY
           docker build --no-cache -t $ECR_REPOSITORY .
           docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
