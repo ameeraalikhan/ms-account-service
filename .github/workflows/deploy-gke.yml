@@ -58,7 +58,7 @@ jobs:
 
       - name: 🔧 Replace image placeholder in manifest
         run: |
-          sed -i "s|IMAGE_PLACEHOLDER|$GCR_IMAGE:${{ github.sha }}|" account-service-full.yaml
+          sed -i "s|IMAGE_PLACEHOLDER|$GCR_IMAGE:${{ github.sha }}|" account-service.yaml
 
       - name: ⚙️ Get GKE Credentials
         run: |
