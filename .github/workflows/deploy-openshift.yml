@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: 📤 Push to Docker Hub
-        run: docker push ${{ env.IMAGE_FULL }}
+        run: docker push $IMAGE_FULL
 
       - name: 🛠️ Install OpenShift CLI
         run: |
@@ -57,8 +57,7 @@ jobs:
           echo "${{ secrets.OPENSHIFT_TOKEN }}" | oc login --token=$(cat -) --server=${{ secrets.OPENSHIFT_URL }} --insecure-skip-tls-verify=true
 
       - name: 🔧 Replace image in manifest
-        run: |
-          sed -i "s|IMAGE_PLACEHOLDER|${{ env.IMAGE_FULL }}|" account-service.yaml
+        run: sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_FULL|" account-service.yaml
 
       - name: 🚀 Deploy to OpenShift
         run: |
