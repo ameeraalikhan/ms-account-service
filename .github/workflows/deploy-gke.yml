@@ -13,7 +13,7 @@ env:
   GCP_PROJECT_ID: unique-ellipse-464414-j6
   GCP_REGION: us-central1
   GKE_CLUSTER: autopilot-cluster-1
-  GCR_IMAGE: gcr.io/unique-ellipse-464414-j6/account-service
+  GCR_IMAGE: us-central1-docker.pkg.dev/unique-ellipse-464414-j6/account-service-repo/account-service
 
 jobs:
   build-and-deploy:
