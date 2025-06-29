@@ -11,7 +11,7 @@ env:
   AWS_REGION: ap-south-1
   CLUSTER_NAME: ameera-cluster
   ECR_REGISTRY: 071493677521.dkr.ecr.ap-south-1.amazonaws.com
-  ECR_REPOSITORY: account-service-1
+  ECR_REPOSITORY: account-service
 
 jobs:
   build-and-deploy:

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: account-service
-        image: 071493677521.dkr.ecr.ap-south-1.amazonaws.com/account-service-1:latest
+        image: 071493677521.dkr.ecr.ap-south-1.amazonaws.com/account-service:latest
         ports:
         - containerPort: 8080
 ---
