@@ -38,7 +38,7 @@ public class AuthController {
         } catch (BadCredentialsException ex) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid username or password!"));
+                    .body(Map.of("error", "Invalid username or password !!!"));
         }
     }
 }

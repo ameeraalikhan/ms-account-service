@@ -66,3 +66,4 @@ jobs:
         run: |
           kubectl apply -f account-service-full.yaml
           kubectl scale deployment account-service --replicas=1
+          kubectl rollout restart deployment account-service
