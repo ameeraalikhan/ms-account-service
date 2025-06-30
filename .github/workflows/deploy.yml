@@ -1,6 +1,5 @@
 name: CI/CD - Deploy Account Service to EKS
 
-
 on:
   push:
     branches:
@@ -8,14 +7,16 @@ on:
   workflow_dispatch:
 
 env:
+  IMAGE_NAME: account-service
+
+  # AWS
   AWS_REGION: ap-south-1
   CLUSTER_NAME: ameera-cluster
   ECR_REGISTRY: 071493677521.dkr.ecr.ap-south-1.amazonaws.com
-  ECR_REPOSITORY: account-service-1
+  ECR_REPOSITORY: account-service
 
 jobs:
   build-and-deploy:
-    name: Build, Push to ECR & Deploy to EKS
     runs-on: ubuntu-latest
 
     steps:
@@ -31,6 +32,11 @@ jobs:
       - name: 🧪 Build Spring Boot App
         run: mvn clean package --file pom.xml
 
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build --no-cache -t $IMAGE_NAME:${{ github.sha }} .
+          docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:latest
+
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -38,31 +44,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: 🔎 Who am I? (Check STS Identity)
-        run: aws sts get-caller-identity
-
       - name: 🔑 Login to Amazon ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin $ECR_REGISTRY
 
-      - name: 🐳 Build Docker Image
+      - name: 🐳 Tag and Push Docker Image to ECR
         run: |
-          docker build --no-cache -t $ECR_REPOSITORY .
-          docker tag $ECR_REPOSITORY:latest $ECR_REGISTRY/$ECR_REPOSITORY:latest
-
-      - name: 📦 Push Docker Image to ECR
-        run: |
+          docker tag $IMAGE_NAME:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker tag $IMAGE_NAME:${{ github.sha }} $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: 🔧 Replace image placeholder in manifest
+        run: |
+          sed -i "s|IMAGE_PLACEHOLDER|$ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}|" account-service.yaml
 
       - name: ⚙️ Update kubeconfig for EKS
         run: |
           aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
-      - name: 🔍 Test EKS Access (kubectl get nodes)
-        run: kubectl get nodes
-
-      - name: 🚀 Deploy to EKS and Scale Up
+      - name: 🚀 Deploy to EKS
         run: |
-          kubectl apply -f account-service-full.yaml
-          kubectl scale deployment account-service --replicas=1
+          kubectl apply -f account-service.yaml
+          kubectl rollout restart deployment account-service

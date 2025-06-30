@@ -1,0 +1,71 @@
+name: CI/CD - Deploy Account Service to GKE
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: account-service
+
+  # GCP
+  GCP_PROJECT_ID: unique-ellipse-464414-j6
+  GCP_REGION: us-central1
+  GKE_CLUSTER: autopilot-cluster-1
+  GCR_IMAGE: us-central1-docker.pkg.dev/unique-ellipse-464414-j6/account-service-repo/account-service
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: ☕ Set up Java 21
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: 🧪 Build Spring Boot App
+        run: mvn clean package --file pom.xml
+
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build --no-cache -t $IMAGE_NAME:${{ github.sha }} .
+          docker tag $IMAGE_NAME:${{ github.sha }} $IMAGE_NAME:latest
+
+      - name: 🔐 Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: ☁️ Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: 🐳 Tag and Push Docker Image to Artifact Registry
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          docker tag $IMAGE_NAME:${{ github.sha }} $GCR_IMAGE:${{ github.sha }}
+          docker tag $IMAGE_NAME:${{ github.sha }} $GCR_IMAGE:latest
+          docker push $GCR_IMAGE:${{ github.sha }}
+          docker push $GCR_IMAGE:latest
+
+      - name: 🔧 Replace image placeholder in manifest
+        run: |
+          sed -i "s|IMAGE_PLACEHOLDER|$GCR_IMAGE:${{ github.sha }}|" account-service.yaml
+
+      - name: ⚙️ Get GKE Credentials
+        run: |
+          gcloud container clusters get-credentials $GKE_CLUSTER \
+            --region $GCP_REGION --project $GCP_PROJECT_ID
+
+      - name: 🚀 Deploy to GKE
+        run: |
+          kubectl apply -f account-service.yaml
+          kubectl rollout restart deployment account-service

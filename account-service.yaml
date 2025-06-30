@@ -16,9 +16,10 @@ spec:
     spec:
       containers:
       - name: account-service
-        image: 071493677521.dkr.ecr.ap-south-1.amazonaws.com/account-service-1:latest
+        image: IMAGE_PLACEHOLDER
         ports:
         - containerPort: 8080
+        imagePullPolicy: Always
 ---
 apiVersion: v1
 kind: Service
@@ -31,4 +32,4 @@ spec:
   - protocol: TCP
     port: 80
     targetPort: 8080
-  type: LoadBalancer
+  type: ClusterIP
