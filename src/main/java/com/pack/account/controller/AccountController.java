@@ -23,6 +23,7 @@ public class AccountController {
         accounts.add(new Account("A1003", "C1003", "Savings", "BR1001"));
          accounts.add(new Account("A1004", "C1004", "Savings", "BR1001"));
           accounts.add(new Account("A1005", "C1005", "Current", "BR1002"));
+        accounts.add(new Account("A1006", "C1006", "Savings", "BR1002"));
 
     }
     
